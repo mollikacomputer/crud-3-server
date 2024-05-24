@@ -10,10 +10,15 @@ const { MongoClient, ServerApiVersion } = require('mongodb');
 
 // jwt json web token
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 
 
 app.use(express.json());
-app.use(cors());
+app.use(cors({
+  origin:['http://localhost:5173', 'http://localhost:5174'],
+  credentials:true
+}));
+app.use(cookieParser());
 
 
 
@@ -58,12 +63,21 @@ async function run() {
       res.send(result);
     });
     // Auth Related Api
+    // go to serverside terminal node hit enter
+    // require('crypto').randomBytes(64).toString('hex')
+    // .env file added this secure code
     app.post('/jwt', async(req, res)=>{
       const user = req.body;
       console.log(user);
-      const token = jwt.sign(user, 'secret', {expiresIn:'1h'})
-      res.send(token);
-    })
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn:"1h"})
+      res
+      .cookie('AccessToken', token, {
+        httpOnly:true,
+        secure:false
+      })
+      .send({success:true})
+      // .send(token);
+    });
 
     // service related Api
     app.get('/services', async(req, res) =>{
@@ -87,6 +101,7 @@ async function run() {
     // bookings
     app.get('/bookings', async(req, res)=>{
       console.log(req.query.email);
+      console.log('ttttt Token', req.cookies);
       let query={};
       if(req.query?.email){
         query = {email : req.query.email}
